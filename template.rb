@@ -148,23 +148,6 @@ ROLLBAR_ACCESS_TOKEN=
 EOF
 end
 
-# Replace .erb files to use .slim
-inside "app/views/layouts" do
-  copy_file "application.html.slim"
-  copy_file "mailer.html.slim"
-  remove_file "application.html.erb"
-  remove_file "mailer.html.erb"
-end
-
-inside "public" do
-  remove_file "404.html"
-  remove_file "422.html"
-  remove_file "500.html"
-  copy_file "404.html.slim"
-  copy_file "422.html.slim"
-  copy_file "500.html.slim"
-end
-
 after_bundle do
 
   if use_devise
@@ -172,10 +155,11 @@ after_bundle do
     generate "devise:install"
     generate "devise", "user"
     generate "devise:views"
-
-    run "gem install html2slim"
-    run "erb2slim -d app/views/devise"
   end
+
+  run "gem install html2slim"
+  run "erb2slim -d ."
+  run "html2slim -d ."
 
   # Launch bundle install & migrations in docker container
   run "docker-compose build"
@@ -214,4 +198,3 @@ after_bundle do
     git commit: %Q{ -m "Added heroku deployment script" }
   end
 end
-
