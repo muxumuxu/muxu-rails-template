@@ -12,7 +12,7 @@ remove_file "Gemfile"
 run "touch Gemfile"
 add_source "https://rubygems.org"
 
-gem "rails"
+gem "rails", "#{Rails.version}"
 gem "pg"
 gem "puma"
 gem "rollbar"
@@ -21,7 +21,9 @@ gem "turbolinks"
 gem "jbuilder"
 gem "sass-rails"
 gem "slim-rails"
-gem "tzinfo-data", platforms: [:mingw, :mswin, :x64_mingw, :jruby]
+gem 'uglifier'
+gem 'jquery-rails'
+gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 gem_group :development, :test do
   gem "byebug", platforms: [:mri, :mingw, :x64_mingw]
@@ -54,6 +56,10 @@ gem_group :test do
   gem "webmock"
   gem "rails-controller-testing"
 end
+
+use_devise = yes?("Would you like to configure devise?")
+
+gem "devise" if use_devise
 
 # Generate the ruby version file
 file ".ruby-version", RUBY_VERSION
@@ -160,6 +166,14 @@ inside "public" do
 end
 
 after_bundle do
+
+  if use_devise
+    run "spring stop"
+    generate "devise:install"
+    generate "devise", "user"
+    generate "devise:views"
+  end
+
   # Launch bundle install & migrations in docker container
   run "docker-compose build"
   run "docker-compose run web bundle exec rails db:create db:migrate"
