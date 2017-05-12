@@ -1,0 +1,38 @@
+# <%= app_name %>
+
+This is a Rails <%= Rails::VERSION::MAJOR %> app.
+
+## Prerequisites
+
+This project requires:
+
+* [Docker](https://docs.docker.com/docker-for-mac/install/) installed
+
+## Getting started
+
+Launch the project locally:
+
+```
+docker-compose build
+docker-compose run web rails db:create
+docker-compose run web rails db:migrate
+docker-compose run web rails db:seed
+docker-compose up
+```
+
+## Guard and tests
+
+Prepare your database:
+```shell
+docker-compose run -e 'RAILS_ENV=test' web rails db:create db:migrate
+```
+
+For continuous testing you can use [guard](https://github.com/guard/guard-minitest):
+```shell
+docker-compose run test guard
+```
+
+To launch all tests:
+```shell
+docker-compose run web rails test
+```

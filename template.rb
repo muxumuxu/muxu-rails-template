@@ -2,6 +2,11 @@ def source_paths
   Array(super) + [File.expand_path(File.dirname(__FILE__))]
 end
 
+# Replace README.md
+template "README.md.tt", :force => true
+
+copy_file "Guardfile"
+
 # Configure Gemfile
 remove_file "Gemfile"
 run "touch Gemfile"
@@ -122,6 +127,10 @@ end
 
 copy_file '.dockerignore'
 
+# Replace .gitignore
+remove_file '.gitignore'
+copy_file '.gitignore'
+
 # Add initializers
 inside "config/initializers" do
   copy_file "rollbar.rb"
@@ -150,14 +159,9 @@ inside "public" do
   copy_file "500.html.slim"
 end
 
-# Add deployment scripts
-run "mkdir scripts"
-inside "scripts" do
-  copy_file "deploy"
-  run "chmod +x deploy"
-end
-
 after_bundle do
+  # Launch bundle install & migrations in docker container
+  run "docker-compose build"
   run "docker-compose run web bundle exec rails db:create db:migrate"
 
   git :init
@@ -166,11 +170,31 @@ after_bundle do
 
   # Configure heroku
   if yes?("Would you like to configure Heroku?")
+    # Add deployment scripts
+    run "mkdir scripts"
+    inside "scripts" do
+      copy_file "deploy"
+      run "chmod +x deploy"
+    end
+
+    run "heroku plugins:install heroku-container-registry"
     run "heroku apps:create #{app_name}"
     run "heroku addons:create heroku-postgresql:hobby-dev"
     run "heroku addons:create rollbar"
     run "heroku container:login"
     run "heroku container:push web"
     run "heroku ps:scale web=1"
+
+    append_file 'README.md', <<-EOF
+## Heroku deployment
+
+```
+./scripts/deploy
+```
+    EOF
+
+    git add: "."
+    git commit: %Q{ -m "Added heroku deployment script" }
   end
 end
+
