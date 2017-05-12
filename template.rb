@@ -57,6 +57,9 @@ if yes?("Would you like to install Devise?")
   generate "devise", "user"
 end
 
+# Generate the ruby version file
+file ".ruby-version", RUBY_VERSION
+
 # Configure Docker
 create_file "Dockerfile" do <<-EOF
 FROM ruby:2.4.0
@@ -144,6 +147,7 @@ inside "app/views/layouts" do
   remove_file "application.html.erb"
   remove_file "mailer.html.erb"
 end
+
 inside "public" do
   remove_file "404.html"
   remove_file "422.html"
@@ -161,10 +165,6 @@ inside "scripts" do
 end
 
 after_bundle do
-  git :init
-  git add: "."
-  git commit: %Q{ -m "Initial Rails app" }
-
   if yes?("Would you like to configure Heroku?")
     run "heroku apps:create #{app_name}"
     run "heroku addons:create heroku-postgresql:hobby-dev"
@@ -174,5 +174,9 @@ after_bundle do
     run "heroku ps:scale web=1"
   end
 
-  run "docker-compose run web bundle exec rails db:create"
+  run "docker-compose run web bundle exec rails db:create db:migrate"
+
+  git :init
+  git add: "."
+  git commit: %Q{ -m "Initial Rails app" }
 end
