@@ -148,8 +148,26 @@ ROLLBAR_ACCESS_TOKEN=
 EOF
 end
 
-after_bundle do
+use_heroku = yes?("Would you like to configure Heroku?")
 
+if use_heroku
+  # Add deployment scripts
+  run "mkdir scripts"
+  inside "scripts" do
+    copy_file "deploy"
+    run "chmod +x deploy"
+  end
+
+  append_file 'README.md', <<-EOF
+## Heroku deployment
+
+```
+./scripts/deploy
+```
+  EOF
+end
+
+after_bundle do
   if use_devise
     run "spring stop"
     generate "devise:install"
@@ -170,31 +188,13 @@ after_bundle do
   git commit: %Q{ -m "Initial Rails app" }
 
   # Configure heroku
-  if yes?("Would you like to configure Heroku?")
-    # Add deployment scripts
-    run "mkdir scripts"
-    inside "scripts" do
-      copy_file "deploy"
-      run "chmod +x deploy"
-    end
-
+  if use_heroku
+    sanitized_name = app_name.gsub('_', '-')
     run "heroku plugins:install heroku-container-registry"
-    run "heroku apps:create #{app_name}"
+    run "heroku apps:create #{sanitized_name}"
     run "heroku addons:create heroku-postgresql:hobby-dev"
     run "heroku addons:create rollbar"
-    run "heroku container:login"
-    run "heroku container:push web"
+    run "scripts/deploy"
     run "heroku ps:scale web=1"
-
-    append_file 'README.md', <<-EOF
-## Heroku deployment
-
-```
-./scripts/deploy
-```
-    EOF
-
-    git add: "."
-    git commit: %Q{ -m "Added heroku deployment script" }
   end
 end
