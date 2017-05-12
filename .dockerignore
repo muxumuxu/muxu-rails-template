@@ -1,0 +1,7 @@
+tmp*
+public/uploads
+.env
+Dockerfile
+README.md
+.git*
+tmp/*

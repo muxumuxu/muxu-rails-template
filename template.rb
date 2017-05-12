@@ -50,6 +50,13 @@ gem_group :test do
   gem "rails-controller-testing"
 end
 
+# Install devise
+if yes?("Would you like to install Devise?")
+  gem "devise"
+  generate "devise:install"
+  generate "devise", "user"
+end
+
 # Configure Docker
 create_file "Dockerfile" do <<-EOF
 FROM ruby:2.4.0
@@ -117,14 +124,7 @@ EOF
   end
 end
 
-# Configure devise
-if yes?("Would you like to install Devise?")
-  gem "devise"
-  generate "devise:install"
-  model_name = ask("What would you like the user model to be called? [user]")
-  model_name = "user" if model_name.blank?
-  generate "devise", model_name
-end
+copy_file '.dockerignore'
 
 # Add initializers
 inside "config/initializers" do
@@ -153,17 +153,26 @@ inside "public" do
   copy_file "500.html.slim"
 end
 
+# Add deployment scripts
+run "mkdir scripts"
+inside "scripts" do
+  copy_file "deploy"
+  run "chmod +x deploy"
+end
+
 after_bundle do
   git :init
   git add: "."
   git commit: %Q{ -m "Initial Rails app" }
 
-  run "heroku apps:create #{app_name}"
-  run "heroku addons:create heroku-postgresql"
-  run "heroku addons:create rollbar"
-  run "heroku container:login"
-  run "heroku container:push web"
+  if yes?("Would you like to configure Heroku?")
+    run "heroku apps:create #{app_name}"
+    run "heroku addons:create heroku-postgresql:hobby-dev"
+    run "heroku addons:create rollbar"
+    run "heroku container:login"
+    run "heroku container:push web"
+    run "heroku ps:scale web=1"
+  end
 
   run "docker-compose run web bundle exec rails db:create"
-  run "docker-compose up"
 end

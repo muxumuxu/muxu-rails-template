@@ -1,0 +1,3 @@
+heroku container:login
+heroku container:push web
+heroku run bundle exec rails db:migrate
