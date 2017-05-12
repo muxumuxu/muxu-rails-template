@@ -172,6 +172,9 @@ after_bundle do
     generate "devise:install"
     generate "devise", "user"
     generate "devise:views"
+
+    run "gem install html2slim"
+    run "erb2slim -d app/views/devise"
   end
 
   # Launch bundle install & migrations in docker container
