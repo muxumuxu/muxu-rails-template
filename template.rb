@@ -50,13 +50,6 @@ gem_group :test do
   gem "rails-controller-testing"
 end
 
-# Install devise
-if yes?("Would you like to install Devise?")
-  gem "devise"
-  generate "devise:install"
-  generate "devise", "user"
-end
-
 # Generate the ruby version file
 file ".ruby-version", RUBY_VERSION
 
@@ -171,6 +164,7 @@ after_bundle do
   git add: "."
   git commit: %Q{ -m "Initial Rails app" }
 
+  # Configure heroku
   if yes?("Would you like to configure Heroku?")
     run "heroku apps:create #{app_name}"
     run "heroku addons:create heroku-postgresql:hobby-dev"
