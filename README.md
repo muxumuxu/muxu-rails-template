@@ -10,3 +10,8 @@ This rails template is configured with:
   - [Heroku](https://heroku.com/)
   - and other cool gems
   
+## Usage
+
+```
+rails new my_app -m https://raw.githubusercontent.com/muxumuxu/slim-sass-rails-template/master/template.rb
+```
