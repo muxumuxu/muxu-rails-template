@@ -165,6 +165,12 @@ inside "scripts" do
 end
 
 after_bundle do
+  run "docker-compose run web bundle exec rails db:create db:migrate"
+
+  git :init
+  git add: "."
+  git commit: %Q{ -m "Initial Rails app" }
+
   if yes?("Would you like to configure Heroku?")
     run "heroku apps:create #{app_name}"
     run "heroku addons:create heroku-postgresql:hobby-dev"
@@ -173,10 +179,4 @@ after_bundle do
     run "heroku container:push web"
     run "heroku ps:scale web=1"
   end
-
-  run "docker-compose run web bundle exec rails db:create db:migrate"
-
-  git :init
-  git add: "."
-  git commit: %Q{ -m "Initial Rails app" }
 end
