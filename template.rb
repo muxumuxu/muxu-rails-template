@@ -189,7 +189,7 @@ after_bundle do
 
   # Configure heroku
   if use_heroku
-    sanitized_name = app_name.gsub('_', '-')
+    sanitized_name = app_name.gsub('_', '-').gsub('.', '-')
     run "heroku plugins:install heroku-container-registry"
     run "heroku apps:create #{sanitized_name}"
     run "heroku addons:create heroku-postgresql:hobby-dev"
