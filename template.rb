@@ -64,74 +64,19 @@ gem "devise" if use_devise
 # Generate the ruby version file
 file ".ruby-version", RUBY_VERSION
 
+# Create .env file
+copy_file ".env"
+
 # Configure Docker
-create_file "Dockerfile" do <<-EOF
-FROM ruby:2.4.0
-
-RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs
-
-ENV APP_HOME /#{app_name}
-RUN mkdir $APP_HOME
-WORKDIR $APP_HOME
-
-ADD . $APP_HOME
-ENV BUNDLE_GEMFILE=$APP_HOME/Gemfile \
-  BUNDLE_JOBS=2 \
-  BUNDLE_PATH=/bundle
-RUN bundle install
-
-CMD bundle exec rails s -p ${PORT:-3000} -b "0.0.0.0"
-EOF
-end
-
-create_file "docker-compose.yml" do <<-EOF
-version: "2"
-services:
-  db:
-    image: postgres
-  web:
-    build: .
-    command: bundle exec rails s -p 3000 -b "0.0.0.0"
-    env_file:
-      - .env
-    volumes:
-      - .:/#{app_name}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
-EOF
-end
+template "Dockerfile.tt"
+template "docker-compose.yml.tt"
+copy_file '.dockerignore'
 
 # Configure database
 inside "config" do
   remove_file "database.yml"
-  create_file "database.yml" do <<-EOF
-default: &default
-  adapter: postgresql
-  encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  database: postgres
-  username: postgres
-  password:
-  host: db
-
-development:
-  <<: *default
-  database: #{app_name}_development
-
-staging:
-  <<: *default
-  database: #{app_name}_staging
-
-test:
-  <<: *default
-  database: #{app_name}_test
-EOF
-  end
+  template "database.yml.tt"
 end
-
-copy_file '.dockerignore'
 
 # Replace .gitignore
 remove_file '.gitignore'
@@ -140,12 +85,6 @@ copy_file '.gitignore'
 # Add initializers
 inside "config/initializers" do
   copy_file "rollbar.rb"
-end
-
-# Create .env file
-create_file ".env" do <<-EOF
-ROLLBAR_ACCESS_TOKEN=
-EOF
 end
 
 use_heroku = yes?("Would you like to configure Heroku?")
