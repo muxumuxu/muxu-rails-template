@@ -37,6 +37,7 @@ gem "sass-rails"
 gem "slim-rails"
 gem "uglifier"
 gem "jquery-rails"
+gem "annotate"
 gem "tzinfo-data", platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 gem_group :development, :test do
@@ -49,6 +50,7 @@ gem_group :development, :test do
 end
 
 gem_group :development do
+  gem "awesome_print"
   gem "web-console"
   gem "better_errors"
   gem "listen"
