@@ -1,6 +1,4 @@
-def source_paths
-  Array(super) + [File.expand_path(File.dirname(__FILE__))]
-end
+require "shellwords"
 
 # Add this template directory to source_paths so that Thor actions like
 # copy_file and template resolve against our source files. If this file was
@@ -37,9 +35,9 @@ gem "turbolinks"
 gem "jbuilder"
 gem "sass-rails"
 gem "slim-rails"
-gem 'uglifier'
-gem 'jquery-rails'
-gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
+gem "uglifier"
+gem "jquery-rails"
+gem "tzinfo-data", platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 gem_group :development, :test do
   gem "byebug", platforms: [:mri, :mingw, :x64_mingw]
@@ -86,34 +84,28 @@ copy_file ".env"
 # Configure Docker
 template "Dockerfile.tt"
 template "docker-compose.yml.tt"
-copy_file '.dockerignore'
+copy_file ".dockerignore"
 
 # Configure database
-inside "config" do
-  remove_file "database.yml"
-  template "database.yml.tt"
-end
+remove_file "config/database.yml"
+template "config/database.yml.tt"
 
 # Replace .gitignore
-remove_file '.gitignore'
-copy_file '.gitignore'
+remove_file ".gitignore"
+copy_file ".gitignore"
 
 # Add initializers
-inside "config/initializers" do
-  copy_file "rollbar.rb"
-end
+copy_file "config/initializers/rollbar.rb"
 
 use_heroku = yes?("Would you like to configure Heroku?")
 
 if use_heroku
   # Add deployment scripts
   run "mkdir scripts"
-  inside "scripts" do
-    copy_file "deploy"
-    run "chmod +x deploy"
-  end
+  copy_file "scripts/deploy"
+  run "chmod +x scripts/deploy"
 
-  append_file 'README.md', <<-EOF
+  append_file "README.md", <<-EOF
 ## Heroku deployment
 
 ```
@@ -144,7 +136,7 @@ after_bundle do
 
   # Configure heroku
   if use_heroku
-    sanitized_name = app_name.gsub('_', '-').gsub('.', '-')
+    sanitized_name = app_name.gsub("_", "-").gsub(".", "-")
     run "heroku plugins:install heroku-container-registry"
     run "heroku apps:create #{sanitized_name}"
     run "heroku addons:create heroku-postgresql:hobby-dev"
