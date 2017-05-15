@@ -2,6 +2,22 @@ def source_paths
   Array(super) + [File.expand_path(File.dirname(__FILE__))]
 end
 
+# Add this template directory to source_paths so that Thor actions like
+# copy_file and template resolve against our source files. If this file was
+# invoked remotely via HTTP, that means the files are not present locally.
+# In that case, use `git clone` to download them to a local temporary dir.
+if __FILE__ =~ %r{\Ahttps?://}
+  source_paths.unshift(tempdir = Dir.mktmpdir("muxu-rails-template-"))
+  at_exit { FileUtils.remove_entry(tempdir) }
+  git :clone => [
+    "--quiet",
+    "https://github.com/muxumuxu/muxu-rails-template.git",
+    tempdir
+  ].map(&:shellescape).join(" ")
+else
+  source_paths.unshift(File.dirname(__FILE__))
+end
+
 # Replace README.md
 template "README.md.tt", :force => true
 
