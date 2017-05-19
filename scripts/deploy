@@ -1,4 +1,4 @@
 heroku container:login
-docker-compose run -e "RAILS_ENV=production" web bundle exec rake assets:precompile
+docker-compose run web bundle exec rake assets:precompile
 heroku container:push web
 heroku run bundle exec rails db:migrate

@@ -101,6 +101,7 @@ remove_file ".gitignore"
 copy_file ".gitignore"
 
 # Add initializers
+copy_file "config/environments/production.rb"
 copy_file "config/initializers/rollbar.rb"
 copy_file "config/initializers/carrierwave.rb"
 
