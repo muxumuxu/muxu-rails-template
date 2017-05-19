@@ -1,5 +1,19 @@
-def source_paths
-  Array(super) + [File.expand_path(File.dirname(__FILE__))]
+require "shellwords"
+
+# Add this template directory to source_paths so that Thor actions like
+# copy_file and template resolve against our source files. If this file was
+# invoked remotely via HTTP, that means the files are not present locally.
+# In that case, use `git clone` to download them to a local temporary dir.
+if __FILE__ =~ %r{\Ahttps?://}
+  source_paths.unshift(tempdir = Dir.mktmpdir("muxu-rails-template-"))
+  at_exit { FileUtils.remove_entry(tempdir) }
+  git :clone => [
+    "--quiet",
+    "https://github.com/muxumuxu/muxu-rails-template.git",
+    tempdir
+  ].map(&:shellescape).join(" ")
+else
+  source_paths.unshift(File.dirname(__FILE__))
 end
 
 # Replace README.md
@@ -27,6 +41,7 @@ gem "tzinfo-data", platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 gem "fog-aws"
 gem "carrierwave"
 gem "jquery-rails"
+gem "annotate"
 
 gem_group :development, :test do
   gem "byebug", platforms: [:mri, :mingw, :x64_mingw]
@@ -38,6 +53,7 @@ gem_group :development, :test do
 end
 
 gem_group :development do
+  gem "awesome_print"
   gem "web-console"
   gem "better_errors"
   gem "listen"
@@ -67,103 +83,34 @@ gem "devise" if use_devise
 # Generate the ruby version file
 file ".ruby-version", RUBY_VERSION
 
+# Create .env file
+copy_file ".env"
+
 # Configure Docker
-create_file "Dockerfile" do <<-EOF
-FROM ruby:2.4.0
-
-RUN apt-get update -qq && apt-get install -y build-essential libpq-dev nodejs
-
-ENV APP_HOME /#{app_name}
-RUN mkdir $APP_HOME
-WORKDIR $APP_HOME
-
-ADD . $APP_HOME
-ENV BUNDLE_GEMFILE=$APP_HOME/Gemfile \
-  BUNDLE_JOBS=2 \
-  BUNDLE_PATH=/bundle
-RUN bundle install
-
-CMD bundle exec rails s -p ${PORT:-3000} -b "0.0.0.0"
-EOF
-end
-
-create_file "docker-compose.yml" do <<-EOF
-version: "2"
-services:
-  db:
-    image: postgres
-  web:
-    build: .
-    command: bundle exec rails s -p 3000 -b "0.0.0.0"
-    env_file:
-      - .env
-    volumes:
-      - .:/#{app_name}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
-EOF
-end
+template "Dockerfile.tt"
+template "docker-compose.yml.tt"
+copy_file ".dockerignore"
 
 # Configure database
-inside "config" do
-  remove_file "database.yml"
-  create_file "database.yml" do <<-EOF
-default: &default
-  adapter: postgresql
-  encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  database: postgres
-  username: postgres
-  password:
-  host: db
 
-development:
-  <<: *default
-  database: #{app_name}_development
-
-staging:
-  <<: *default
-  database: #{app_name}_staging
-
-test:
-  <<: *default
-  database: #{app_name}_test
-EOF
-  end
-end
-
-copy_file ".dockerignore"
+remove_file "config/database.yml"
+template "config/database.yml.tt"
 
 # Replace .gitignore
 remove_file ".gitignore"
 copy_file ".gitignore"
 
 # Add initializers
-inside "config/initializers" do
-  copy_file "rollbar.rb"
-  copy_file "carrierwave.rb"
-end
-
-# Create .env file
-create_file ".env" do <<-EOF
-ROLLBAR_ACCESS_TOKEN=
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-S3_BUCKET_NAME=
-EOF
-end
+copy_file "config/initializers/rollbar.rb"
+copy_file "config/initializers/carrierwave.rb"
 
 use_heroku = yes?("Would you like to configure Heroku?")
 
 if use_heroku
   # Add deployment scripts
   run "mkdir scripts"
-  inside "scripts" do
-    copy_file "deploy"
-    run "chmod +x deploy"
-  end
+  copy_file "scripts/deploy"
+  run "chmod +x scripts/deploy"
 
   append_file "README.md", <<-EOF
 ## Heroku deployment
