@@ -21,9 +21,12 @@ gem "turbolinks"
 gem "jbuilder"
 gem "sass-rails"
 gem "slim-rails"
-gem 'uglifier'
-gem 'jquery-rails'
-gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
+gem "uglifier"
+gem "jquery-rails"
+gem "tzinfo-data", platforms: [:mingw, :mswin, :x64_mingw, :jruby]
+gem "fog-aws"
+gem "carrierwave"
+gem "jquery-rails"
 
 gem_group :development, :test do
   gem "byebug", platforms: [:mri, :mingw, :x64_mingw]
@@ -131,20 +134,24 @@ EOF
   end
 end
 
-copy_file '.dockerignore'
+copy_file ".dockerignore"
 
 # Replace .gitignore
-remove_file '.gitignore'
-copy_file '.gitignore'
+remove_file ".gitignore"
+copy_file ".gitignore"
 
 # Add initializers
 inside "config/initializers" do
   copy_file "rollbar.rb"
+  copy_file "carrierwave.rb"
 end
 
 # Create .env file
 create_file ".env" do <<-EOF
 ROLLBAR_ACCESS_TOKEN=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+S3_BUCKET_NAME=
 EOF
 end
 
@@ -158,7 +165,7 @@ if use_heroku
     run "chmod +x deploy"
   end
 
-  append_file 'README.md', <<-EOF
+  append_file "README.md", <<-EOF
 ## Heroku deployment
 
 ```
@@ -189,7 +196,7 @@ after_bundle do
 
   # Configure heroku
   if use_heroku
-    sanitized_name = app_name.gsub('_', '-').gsub('.', '-')
+    sanitized_name = app_name.gsub("_", "-").gsub(".", "-")
     run "heroku plugins:install heroku-container-registry"
     run "heroku apps:create #{sanitized_name}"
     run "heroku addons:create heroku-postgresql:hobby-dev"
